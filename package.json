@@ -1,0 +1,15 @@
+{
+  "name": "weedmap",
+  "version": "1.0.0",
+  "description": "WeedMap",
+  "scripts": {
+    "sync": "cap sync"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  }
+}

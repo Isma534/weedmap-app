@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>WeedMap</title>
+<link href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#0d1117;--card:#161b22;--accent:#ff7a45;--text:#f0f2f5;--muted:#8b949e;}
+  :root[data-theme="light"]{--bg:#f2f3f5;--card:#ffffff;--text:#1a1d21;--muted:#6b7280;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;}
+  #map{position:absolute;inset:0;z-index:0;}
+  .hidden{display:none !important;}
+
+  /* --- Ecran de connexion --- */
+  #auth{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:20;}
+  #auth form{background:var(--card);padding:28px;border-radius:16px;width:280px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 40px rgba(0,0,0,.2);}
+  #auth h1{margin:0 0 8px;font-size:22px;text-align:center;color:var(--text);}
+  #auth input{padding:12px;border-radius:10px;border:1px solid #30363d;background:var(--bg);color:var(--text);font-size:15px;}
+  #auth button{padding:12px;border:none;border-radius:10px;background:var(--accent);color:white;font-weight:600;font-size:15px;}
+  #auth p{color:var(--muted);font-size:13px;text-align:center;margin:4px 0 0;cursor:pointer;text-decoration:underline;}
+  #authError{color:#ff6161;font-size:13px;text-align:center;min-height:16px;}
+
+  /* --- Barre du haut --- */
+  #topbar{position:fixed;top:0;left:0;right:0;padding:14px;display:flex;justify-content:space-between;align-items:center;z-index:10;pointer-events:none;}
+  #topbar *{pointer-events:auto;}
+  .pill{background:rgba(22,27,34,.85);backdrop-filter:blur(6px);padding:10px 16px;border-radius:999px;font-weight:600;color:var(--text);}
+  [data-theme="light"] .pill{background:rgba(255,255,255,.85);}
+  .iconbtn{background:rgba(22,27,34,.85);backdrop-filter:blur(6px);width:44px;height:44px;border-radius:50%;border:none;color:var(--text);font-size:18px;}
+  [data-theme="light"] .iconbtn{background:rgba(255,255,255,.85);}
+  .rightIcons{display:flex;gap:8px;}
+
+  /* --- Bouton fumer --- */
+  #smokeBtn{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:10;background:var(--accent);color:white;border:none;padding:16px 28px;border-radius:999px;font-size:16px;font-weight:700;box-shadow:0 6px 20px rgba(255,122,69,.4);}
+
+  /* --- Panneau amis --- */
+  #friendsPanel{position:fixed;top:0;right:0;bottom:0;width:300px;max-width:85vw;background:var(--card);z-index:15;transform:translateX(100%);transition:.25s;padding:16px;overflow-y:auto;color:var(--text);}
+  #friendsPanel.open{transform:translateX(0);}
+  #friendsPanel h2{font-size:17px;margin:14px 0 8px;}
+  #friendsPanel input{width:100%;padding:10px;border-radius:8px;border:1px solid #30363d;background:var(--bg);color:var(--text);margin-bottom:8px;}
+  .friendRow{display:flex;justify-content:space-between;align-items:center;background:var(--bg);padding:10px;border-radius:8px;margin-bottom:6px;}
+  .friendRow button{background:var(--accent);color:white;border:none;padding:6px 10px;border-radius:6px;font-size:12px;}
+  .closeBtn{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--text);font-size:20px;}
+
+  /* --- Marqueurs --- */
+  .cigDot{width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,.4);}
+  .meDot{position:relative;width:16px;height:16px;border-radius:50%;background:#4da3ff;border:2px solid white;}
+  .meDot::after{content:"";position:absolute;inset:-8px;border-radius:50%;background:rgba(77,163,255,.35);animation:pulse 2s infinite;}
+  @keyframes pulse{0%{transform:scale(.6);opacity:.8;}100%{transform:scale(2.2);opacity:0;}}
+</style>
+</head>
+<body data-theme="dark">
+
+<div id="map"></div>
+
+<!-- ECRAN CONNEXION -->
+<div id="auth">
+  <form id="authForm">
+    <h1>🍃 WeedMap</h1>
+    <input id="username" placeholder="Pseudo" autocomplete="off" required>
+    <input id="password" placeholder="Mot de passe" type="password" required>
+    <button type="submit" id="authSubmit">Se connecter</button>
+    <p id="switchMode">Pas de compte ? Créer un compte</p>
+    <div id="authError"></div>
+  </form>
+</div>
+
+<!-- BARRE DU HAUT -->
+<div id="topbar">
+  <div class="pill" id="meLabel"></div>
+  <div class="rightIcons">
+    <button class="iconbtn" id="locateBtn" title="Me localiser">📍</button>
+    <button class="iconbtn" id="themeToggleBtn" title="Mode clair / sombre">🌙</button>
+    <button class="iconbtn" id="friendsBtn">👥</button>
+    <button class="iconbtn" id="logoutBtn">⏻</button>
+  </div>
+</div>
+
+<button id="smokeBtn">🍃 Nouvelle session</button>
+
+<!-- FENETRE D'AJOUT -->
+<div id="addModalBackdrop" class="hidden">
+  <div id="addModal">
+    <h2>Nouvelle session</h2>
+    <label>Titre (optionnel)</label>
+    <input id="addTitle" placeholder="Ex : Session entre amis" maxlength="60">
+    <label>Photos (optionnel, 3 max)</label>
+    <input id="addPhotos" type="file" accept="image/*" multiple>
+    <div id="photoPreview"></div>
+    <label>Note (optionnel)</label>
+    <textarea id="addNote" placeholder="Un petit mot..." maxlength="300" rows="3"></textarea>
+    <div id="addError"></div>
+    <div class="addModalBtns">
+      <button id="cancelAddBtn" type="button">Annuler</button>
+      <button id="confirmAddBtn" type="button">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- PANNEAU AMIS -->
+<div id="friendsPanel">
+  <button class="closeBtn" id="closeFriends">✕</button>
+  <h2>Ajouter un ami</h2>
+  <input id="searchInput" placeholder="Pseudo de ton ami">
+  <div id="searchResults"></div>
+  <h2>Demandes reçues</h2>
+  <div id="pendingList"></div>
+  <h2>Mes amis</h2>
+  <div id="friendsList"></div>
+</div>
+
+<script>
+// ============================================================
+// 1) COLLE ICI TES CLES SUPABASE (Project Settings > API)
+// ============================================================
+const SUPABASE_URL = "https://xqrvstjcxylehvtxhekf.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_KgfI0EMTBE-NNPLeV-cUEg_u1MH6ZkY";
+const EMAIL_DOMAIN = "@cigmap.local";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let map, myUser = null, myProfile = null, addMode = false;
+let cigData = [];
+let cigMarkers = [];
+let meMarker = null;
+let geoWatchId = null;
+
+/* =========================================================
+   Carte (MapLibre GL, vue globe qui s'aplatit en zoomant)
+   ========================================================= */
+function styleUrlFor(theme){
+  return theme === 'light'
+    ? 'https://tiles.openfreemap.org/styles/positron'
+    : 'https://tiles.openfreemap.org/styles/dark';
+}
+
+// Cache les noms de villes/rues tant qu'on n'a pas assez zoome (sobre, comme Snap)
+// mais laisse les labels de rues/stations apparaitre en zoomant plus pres.
+function simplifyStyle(){
+  const apply = ()=>{
+    const style = map.getStyle();
+    if(!style || !style.layers) return;
+    style.layers.forEach(layer=>{
+      if(layer.type === 'symbol'){
+        try{ map.setLayerZoomRange(layer.id, Math.max(layer.minzoom||0, 8), layer.maxzoom||24); }catch(e){}
+      }
+    });
+  };
+  if(map.isStyleLoaded()) apply(); else map.once('idle', apply);
+}
+
+function initMap(){
+  map = new maplibregl.Map({
+    container: 'map',
+    style: styleUrlFor(document.body.getAttribute('data-theme') || 'dark'),
+    center: [10, 20],
+    zoom: 1.6,
+    attributionControl: false
+  });
+
+  map.on('style.load', ()=>{
+    map.setProjection({ type: 'globe' });
+    simplifyStyle();
+  });
+
+  map.on('click', (e)=>{
+    if(!addMode) return;
+    finishAddMode();
+    addCigarette(e.lngLat.lat, e.lngLat.lng);
+  });
+}
+
+function drawMarkers(){
+  cigMarkers.forEach(m=>m.remove());
+  cigMarkers = [];
+  cigData.forEach(c=>{
+    const isMe = c.user_id === myProfile.id;
+    const el = document.createElement('div');
+    el.className = 'cigDot';
+    el.style.background = isMe ? '#ff7a45' : '#4da3ff';
+    const who = c.profiles ? c.profiles.username : (isMe ? myProfile.username : "?");
+    const popup = new maplibregl.Popup({ offset: 10 }).setHTML(
+      `<b>${who}</b><br>${new Date(c.created_at).toLocaleString()}`
+    );
+    const marker = new maplibregl.Marker({ element: el })
+      .setLngLat([c.lng, c.lat])
+      .setPopup(popup)
+      .addTo(map);
+    cigMarkers.push(marker);
+  });
+}
+
+/* =========================================================
+   Localisation en temps reel ("tu es ici")
+   ========================================================= */
+document.getElementById('locateBtn').onclick = ()=> startLocating();
+
+function startLocating(){
+  if(!navigator.geolocation){ return; }
+  if(geoWatchId !== null) return; // deja actif
+  geoWatchId = navigator.geolocation.watchPosition(
+    (pos)=>{
+      const { latitude, longitude } = pos.coords;
+      if(!meMarker){
+        const el = document.createElement('div');
+        el.className = 'meDot';
+        meMarker = new maplibregl.Marker({ element: el }).setLngLat([longitude, latitude]).addTo(map);
+      } else {
+        meMarker.setLngLat([longitude, latitude]);
+      }
+    },
+    ()=>{ /* refuse ou indisponible : on ignore silencieusement */ },
+    { enableHighAccuracy:true, maximumAge:5000 }
+  );
+}
+
+/* =========================================================
+   Ajout d'une clope
+   ========================================================= */
+document.getElementById('smokeBtn').onclick = ()=>{
+  addMode = true;
+  document.getElementById('smokeBtn').style.opacity = .5;
+};
+function finishAddMode(){
+  addMode = false;
+  document.getElementById('smokeBtn').style.opacity = 1;
+}
+async function addCigarette(lat, lng){
+  await sb.from('cigarettes').insert({ user_id: myProfile.id, lat, lng });
+  loadCigarettes();
+}
+
+/* =========================================================
+   Theme clair / sombre
+   ========================================================= */
+document.getElementById('themeToggleBtn').onclick = ()=>{
+  const body = document.body;
+  const isDark = body.getAttribute('data-theme')==='dark';
+  const newTheme = isDark ? 'light' : 'dark';
+  body.setAttribute('data-theme', newTheme);
+  document.getElementById('themeToggleBtn').textContent = isDark ? '☀️' : '🌙';
+  if(map) map.setStyle(styleUrlFor(newTheme));
+};
+
+/* =========================================================
+   Auth
+   ========================================================= */
+let isSignup = false;
+document.getElementById('switchMode').onclick = ()=>{
+  isSignup = !isSignup;
+  document.getElementById('authSubmit').textContent = isSignup ? "Créer le compte" : "Se connecter";
+  document.getElementById('switchMode').textContent = isSignup ? "J'ai déjà un compte" : "Pas de compte ? Créer un compte";
+};
+
+document.getElementById('authForm').onsubmit = async (e)=>{
+  e.preventDefault();
+  const username = document.getElementById('username').value.trim().toLowerCase();
+  const password = document.getElementById('password').value;
+  const email = username + EMAIL_DOMAIN;
+  const errBox = document.getElementById('authError');
+  errBox.textContent = "";
+
+  if(isSignup){
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if(error){ errBox.textContent = error.message; return; }
+    const { error: profErr } = await sb.from('profiles').insert({ id: data.user.id, username });
+    if(profErr){ errBox.textContent = "Ce pseudo est déjà pris."; return; }
+    startApp(data.user);
+  } else {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){ errBox.textContent = "Pseudo ou mot de passe incorrect."; return; }
+    startApp(data.user);
+  }
+};
+
+document.getElementById('logoutBtn').onclick = async ()=>{
+  await sb.auth.signOut();
+  location.reload();
+};
+
+async function startApp(user){
+  myUser = user;
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  myProfile = profile;
+  document.getElementById('meLabel').textContent = "🍃 " + profile.username;
+  document.getElementById('auth').classList.add('hidden');
+  if(!map) initMap();
+  loadCigarettes();
+  loadFriendsPanel();
+  startLocating(); // demande la position des l'arrivee sur le site
+}
+
+/* =========================================================
+   Donnees
+   ========================================================= */
+async function loadCigarettes(){
+  const { data, error } = await sb.from('cigarettes').select('*, profiles(username)');
+  if(error || !data) return;
+  cigData = data;
+  drawMarkers();
+}
+
+/* --- Panneau amis --- */
+document.getElementById('friendsBtn').onclick = ()=> document.getElementById('friendsPanel').classList.add('open');
+document.getElementById('closeFriends').onclick = ()=> document.getElementById('friendsPanel').classList.remove('open');
+
+document.getElementById('searchInput').oninput = async (e)=>{
+  const q = e.target.value.trim().toLowerCase();
+  const box = document.getElementById('searchResults');
+  box.innerHTML = "";
+  if(q.length < 2) return;
+  const { data } = await sb.from('profiles').select('*').ilike('username', q+'%').neq('id', myProfile.id).limit(5);
+  (data||[]).forEach(p=>{
+    const row = document.createElement('div');
+    row.className = 'friendRow';
+    row.innerHTML = `<span>${p.username}</span><button>Ajouter</button>`;
+    row.querySelector('button').onclick = async ()=>{
+      await sb.from('friendships').insert({ user_id: myProfile.id, friend_id: p.id, status:'pending' });
+      row.querySelector('button').textContent = "Envoyé";
+    };
+    box.appendChild(row);
+  });
+};
+
+async function loadFriendsPanel(){
+  const { data: pending } = await sb.from('friendships')
+    .select('*, profiles!friendships_user_id_fkey(username)')
+    .eq('friend_id', myProfile.id).eq('status','pending');
+  const pendingBox = document.getElementById('pendingList');
+  pendingBox.innerHTML = "";
+  (pending||[]).forEach(f=>{
+    const row = document.createElement('div');
+    row.className = 'friendRow';
+    row.innerHTML = `<span>${f.profiles.username}</span><button>Accepter</button>`;
+    row.querySelector('button').onclick = async ()=>{
+      await sb.from('friendships').update({status:'accepted'}).eq('id', f.id);
+      loadFriendsPanel(); loadCigarettes();
+    };
+    pendingBox.appendChild(row);
+  });
+
+  const { data: accepted1 } = await sb.from('friendships').select('*, profiles!friendships_friend_id_fkey(username)').eq('user_id', myProfile.id).eq('status','accepted');
+  const { data: accepted2 } = await sb.from('friendships').select('*, profiles!friendships_user_id_fkey(username)').eq('friend_id', myProfile.id).eq('status','accepted');
+  const friendsBox = document.getElementById('friendsList');
+  friendsBox.innerHTML = "";
+  [...(accepted1||[]).map(f=>f.profiles.username), ...(accepted2||[]).map(f=>f.profiles.username)].forEach(name=>{
+    const row = document.createElement('div');
+    row.className = 'friendRow';
+    row.innerHTML = `<span>${name}</span>`;
+    friendsBox.appendChild(row);
+  });
+}
+
+sb.auth.getSession().then(({data})=>{
+  if(data.session) startApp(data.session.user);
+});
+</script>
+</body>
+</html>

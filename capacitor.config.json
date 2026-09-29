@@ -1,0 +1,6 @@
+{
+  "appId": "com.weedmap.app",
+  "appName": "WeedMap",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
