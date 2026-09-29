@@ -1,0 +1,28 @@
+workflows:
+  ios-unsigned:
+    name: WeedMap iOS non signé
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment:
+      xcode: latest
+      node: latest
+    scripts:
+      - name: Installer les dépendances
+        script: npm install
+      - name: Ajouter iOS
+        script: |
+          npx cap add ios
+          npx cap sync ios
+      - name: Compiler sans signature
+        script: |
+          cd ios/App
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+            -sdk iphoneos -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+      - name: Créer l'IPA
+        script: |
+          mkdir Payload
+          cp -r ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -r WeedMap.ipa Payload
+    artifacts:
+      - WeedMap.ipa
