@@ -6,6 +6,7 @@ workflows:
     environment:
       xcode: latest
       node: latest
+      cocoapods: default
     scripts:
       - name: Installer les dépendances
         script: npm install
@@ -13,10 +14,14 @@ workflows:
         script: |
           npx cap add ios
           npx cap sync ios
+      - name: Installer les pods
+        script: |
+          cd ios/App
+          pod install
       - name: Compiler sans signature
         script: |
           cd ios/App
-          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release \
             -sdk iphoneos -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
       - name: Créer l'IPA
