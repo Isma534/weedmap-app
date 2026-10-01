@@ -14,6 +14,14 @@ workflows:
         script: |
           npx cap add ios
           npx cap sync ios
+      - name: Icône et permissions
+        script: |
+          cp icon.png "$(ls ios/App/App/Assets.xcassets/AppIcon.appiconset/*.png | head -1)"
+          P=ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string WeedMap utilise ta position pour placer tes sessions" $P || true
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string WeedMap utilise l appareil photo pour tes sessions" $P || true
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string WeedMap utilise tes photos pour tes sessions" $P || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName WeedMap" $P || true
       - name: Installer les pods
         script: |
           cd ios/App
