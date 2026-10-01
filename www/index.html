@@ -1,362 +1,154 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>WeedMap</title>
-<link href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0f1511"><title>WeedMap</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5/dist/maplibre-gl.css">
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{--bg:#0d1117;--card:#161b22;--accent:#ff7a45;--text:#f0f2f5;--muted:#8b949e;}
-  :root[data-theme="light"]{--bg:#f2f3f5;--card:#ffffff;--text:#1a1d21;--muted:#6b7280;}
-  *{box-sizing:border-box;}
-  body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;}
-  #map{position:absolute;inset:0;z-index:0;}
-  .hidden{display:none !important;}
-
-  /* --- Ecran de connexion --- */
-  #auth{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:20;}
-  #auth form{background:var(--card);padding:28px;border-radius:16px;width:280px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 40px rgba(0,0,0,.2);}
-  #auth h1{margin:0 0 8px;font-size:22px;text-align:center;color:var(--text);}
-  #auth input{padding:12px;border-radius:10px;border:1px solid #30363d;background:var(--bg);color:var(--text);font-size:15px;}
-  #auth button{padding:12px;border:none;border-radius:10px;background:var(--accent);color:white;font-weight:600;font-size:15px;}
-  #auth p{color:var(--muted);font-size:13px;text-align:center;margin:4px 0 0;cursor:pointer;text-decoration:underline;}
-  #authError{color:#ff6161;font-size:13px;text-align:center;min-height:16px;}
-
-  /* --- Barre du haut --- */
-  #topbar{position:fixed;top:0;left:0;right:0;padding:14px;display:flex;justify-content:space-between;align-items:center;z-index:10;pointer-events:none;}
-  #topbar *{pointer-events:auto;}
-  .pill{background:rgba(22,27,34,.85);backdrop-filter:blur(6px);padding:10px 16px;border-radius:999px;font-weight:600;color:var(--text);}
-  [data-theme="light"] .pill{background:rgba(255,255,255,.85);}
-  .iconbtn{background:rgba(22,27,34,.85);backdrop-filter:blur(6px);width:44px;height:44px;border-radius:50%;border:none;color:var(--text);font-size:18px;}
-  [data-theme="light"] .iconbtn{background:rgba(255,255,255,.85);}
-  .rightIcons{display:flex;gap:8px;}
-
-  /* --- Bouton fumer --- */
-  #smokeBtn{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:10;background:var(--accent);color:white;border:none;padding:16px 28px;border-radius:999px;font-size:16px;font-weight:700;box-shadow:0 6px 20px rgba(255,122,69,.4);}
-
-  /* --- Panneau amis --- */
-  #friendsPanel{position:fixed;top:0;right:0;bottom:0;width:300px;max-width:85vw;background:var(--card);z-index:15;transform:translateX(100%);transition:.25s;padding:16px;overflow-y:auto;color:var(--text);}
-  #friendsPanel.open{transform:translateX(0);}
-  #friendsPanel h2{font-size:17px;margin:14px 0 8px;}
-  #friendsPanel input{width:100%;padding:10px;border-radius:8px;border:1px solid #30363d;background:var(--bg);color:var(--text);margin-bottom:8px;}
-  .friendRow{display:flex;justify-content:space-between;align-items:center;background:var(--bg);padding:10px;border-radius:8px;margin-bottom:6px;}
-  .friendRow button{background:var(--accent);color:white;border:none;padding:6px 10px;border-radius:6px;font-size:12px;}
-  .closeBtn{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--text);font-size:20px;}
-
-  /* --- Marqueurs --- */
-  .cigDot{width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,.4);}
-  .meDot{position:relative;width:16px;height:16px;border-radius:50%;background:#4da3ff;border:2px solid white;}
-  .meDot::after{content:"";position:absolute;inset:-8px;border-radius:50%;background:rgba(77,163,255,.35);animation:pulse 2s infinite;}
-  @keyframes pulse{0%{transform:scale(.6);opacity:.8;}100%{transform:scale(2.2);opacity:0;}}
-</style>
-</head>
-<body data-theme="dark">
-
+:root{--bg:#0f1511;--sf:#18211b;--sf2:#222e26;--tx:#eef3ea;--mu:#8a9a8c;--ac:#6ba02c;--fr:#e8b84a;--ln:#2c3b30;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
+:root[data-t=light]{--bg:#f3f6ef;--sf:#fff;--sf2:#e9eee4;--tx:#18211b;--mu:#66756a;--ln:#d9e1d3}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font:16px/1.4 -apple-system,system-ui,"SF Pro Text",sans-serif;-webkit-user-select:none;user-select:none}
+input,textarea{-webkit-user-select:text;user-select:text}
+#map{position:fixed;inset:0}
+.glass{background:color-mix(in srgb,var(--sf) 84%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--ln)}
+.hid{display:none!important}.mu{color:var(--mu);font-size:14px;margin:0 0 10px}
+#top{position:fixed;left:14px;right:14px;top:calc(var(--st) + 10px);display:flex;justify-content:space-between;align-items:center;z-index:5}
+#me{padding:7px 16px 7px 8px;border-radius:99px;display:flex;gap:8px;align-items:center;font-weight:650;letter-spacing:-.2px}
+#me img{width:26px;height:26px}#acts{display:flex;gap:8px}
+.ib{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:var(--tx);padding:0}
+.ib svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#loc{position:fixed;right:14px;bottom:calc(var(--sb) + 30px);z-index:5}
+#add{position:fixed;left:50%;bottom:calc(var(--sb) + 22px);transform:translateX(-50%);z-index:5;width:72px;height:72px;border-radius:50%;border:0;background:var(--ac);box-shadow:0 8px 26px rgba(107,160,44,.5);display:grid;place-items:center}
+#add img{width:40px;filter:brightness(0) invert(1)}
+body.s #add,body.s #loc{opacity:0;pointer-events:none}
+#toast{position:fixed;left:50%;top:calc(var(--st) + 68px);transform:translate(-50%,-14px);opacity:0;transition:.25s;z-index:30;padding:10px 16px;border-radius:14px;font-size:14px;max-width:88vw;text-align:center;pointer-events:none}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+.sh{position:fixed;left:0;right:0;bottom:0;z-index:8;max-height:72dvh;overflow:auto;padding:12px 18px calc(var(--sb) + 18px);border-radius:24px 24px 0 0;transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+.sh.on{transform:none}
+.sh:before{content:"";display:block;width:38px;height:4px;border-radius:2px;background:var(--ln);margin:0 auto 12px}
+h2{font-size:21px;margin:0 0 10px;letter-spacing:-.4px}
+h3{font-size:14px;color:var(--mu);margin:16px 0 6px;font-weight:600}
+input,textarea{width:100%;padding:13px;border-radius:12px;border:1px solid var(--ln);background:var(--sf2);color:var(--tx);font:inherit;margin-bottom:8px;outline:0}
+input:focus,textarea:focus{border-color:var(--ac)}
+.btn{width:100%;padding:14px;border:0;border-radius:14px;background:var(--ac);color:#fff;font-weight:650;font-size:16px;font-family:inherit}
+.btn.g{background:var(--sf2);color:var(--tx)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;background:var(--sf2);border-radius:14px;margin-bottom:6px}
+.row small{display:block;color:var(--mu);font-size:13px}
+.row button{border:0;border-radius:10px;padding:8px 13px;background:var(--ac);color:#fff;font-weight:650}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px}
+.seg{display:flex;background:var(--sf2);border-radius:12px;padding:3px;margin-bottom:6px}
+.seg button{flex:1;border:0;background:none;color:var(--mu);padding:9px;border-radius:10px;font-weight:650;font-family:inherit;font-size:15px}
+.seg .on{background:var(--sf);color:var(--tx)}
+.mk{position:relative;width:42px;height:42px;border-radius:50%;background:var(--bg);border:3px solid var(--ac);display:grid;place-items:center;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.mk.f{border-color:var(--fr)}.mk img{width:22px}
+.mk b{position:absolute;top:-8px;right:-8px;min-width:21px;height:21px;padding:0 5px;border-radius:11px;background:var(--tx);color:var(--bg);font-size:12px;display:grid;place-items:center}
+.pd{width:18px;height:18px;border-radius:50%;background:#3b9eff;border:3px solid #fff;animation:p 2s infinite}
+@keyframes p{0%{box-shadow:0 0 0 0 rgba(59,158,255,.6)}70%,100%{box-shadow:0 0 0 18px rgba(59,158,255,0)}}
+.maplibregl-ctrl-bottom-left{margin-bottom:var(--sb)}
+#auth{position:fixed;inset:0;z-index:20;background:radial-gradient(120% 80% at 50% 0,#1d2d1c,var(--bg) 62%);display:flex;flex-direction:column;justify-content:center;padding:calc(var(--st) + 24px) 28px calc(var(--sb) + 24px)}
+:root[data-t=light] #auth{background:radial-gradient(120% 80% at 50% 0,#dcebcd,var(--bg) 62%)}
+#auth>img{width:84px;margin:0 auto 10px}
+#auth h1{text-align:center;font-size:32px;margin:0 0 4px;letter-spacing:-.8px}
+#auth .mu{text-align:center;margin-bottom:26px}
+#af{max-width:360px;width:100%;margin:0 auto}
+#sw{text-align:center;color:var(--ac);font-weight:650;margin-top:14px}
+#er{color:#ff6b6b;text-align:center;min-height:20px;font-size:14px;margin-top:8px}
+</style></head><body>
 <div id="map"></div>
-
-<!-- ECRAN CONNEXION -->
-<div id="auth">
-  <form id="authForm">
-    <h1>🍃 WeedMap</h1>
-    <input id="username" placeholder="Pseudo" autocomplete="off" required>
-    <input id="password" placeholder="Mot de passe" type="password" required>
-    <button type="submit" id="authSubmit">Se connecter</button>
-    <p id="switchMode">Pas de compte ? Créer un compte</p>
-    <div id="authError"></div>
-  </form>
-</div>
-
-<!-- BARRE DU HAUT -->
-<div id="topbar">
-  <div class="pill" id="meLabel"></div>
-  <div class="rightIcons">
-    <button class="iconbtn" id="locateBtn" title="Me localiser">📍</button>
-    <button class="iconbtn" id="themeToggleBtn" title="Mode clair / sombre">🌙</button>
-    <button class="iconbtn" id="friendsBtn">👥</button>
-    <button class="iconbtn" id="logoutBtn">⏻</button>
-  </div>
-</div>
-
-<button id="smokeBtn">🍃 Nouvelle session</button>
-
-<!-- FENETRE D'AJOUT -->
-<div id="addModalBackdrop" class="hidden">
-  <div id="addModal">
-    <h2>Nouvelle session</h2>
-    <label>Titre (optionnel)</label>
-    <input id="addTitle" placeholder="Ex : Session entre amis" maxlength="60">
-    <label>Photos (optionnel, 3 max)</label>
-    <input id="addPhotos" type="file" accept="image/*" multiple>
-    <div id="photoPreview"></div>
-    <label>Note (optionnel)</label>
-    <textarea id="addNote" placeholder="Un petit mot..." maxlength="300" rows="3"></textarea>
-    <div id="addError"></div>
-    <div class="addModalBtns">
-      <button id="cancelAddBtn" type="button">Annuler</button>
-      <button id="confirmAddBtn" type="button">Enregistrer</button>
-    </div>
-  </div>
-</div>
-
-<!-- PANNEAU AMIS -->
-<div id="friendsPanel">
-  <button class="closeBtn" id="closeFriends">✕</button>
-  <h2>Ajouter un ami</h2>
-  <input id="searchInput" placeholder="Pseudo de ton ami">
-  <div id="searchResults"></div>
-  <h2>Demandes reçues</h2>
-  <div id="pendingList"></div>
-  <h2>Mes amis</h2>
-  <div id="friendsList"></div>
-</div>
-
+<div id="top"><div id="me" class="glass"><img src="leaf.png" alt=""><span id="nm"></span></div>
+<div id="acts"><button class="ib glass" id="bF" aria-label="Amis"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.7a3.5 3.5 0 010 6.6M18 14.8c1.9.7 3.2 2.4 3.5 5.2"/></svg></button>
+<button class="ib glass" id="bS" aria-label="Réglages"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button></div></div>
+<button class="ib glass" id="loc" aria-label="Ma position"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+<button id="add" aria-label="Ajouter une session"><img src="leaf.png" alt=""></button>
+<div id="toast" class="glass"></div>
+<div id="sAdd" class="sh glass"><h2>Nouvelle session</h2><input id="aT" placeholder="Titre (facultatif)" maxlength="60"><textarea id="aN" rows="2" placeholder="Note (facultatif)" maxlength="300"></textarea><p id="aM" class="mu"></p><button class="btn" id="aS">Enregistrer ici</button></div>
+<div id="sPts" class="sh glass"></div>
+<div id="sFr" class="sh glass"><h2>Amis</h2><input id="q" placeholder="Chercher un pseudo" autocapitalize="none"><div id="res"></div>
+<h3>Demandes reçues</h3><div id="pend"></div><h3>Mes amis</h3><div id="frs"></div></div>
+<div id="sSet" class="sh glass"><h2>Réglages</h2>
+<h3>Thème</h3><div class="seg"><button data-th="dark">Sombre</button><button data-th="light">Clair</button></div>
+<h3>Carte</h3><div class="seg"><button data-gl="1">Globe</button><button data-gl="0">À plat</button></div>
+<h3>Mot de passe</h3><input id="npw" type="password" placeholder="Nouveau mot de passe (6 caractères min.)" autocomplete="new-password"><button class="btn g" id="pw">Changer le mot de passe</button>
+<h3>Compte</h3><button class="btn g" id="out">Se déconnecter</button></div>
+<div id="auth"><img src="leaf.png" alt=""><h1>WeedMap</h1><p class="mu">La carte de tes sessions, avec tes amis.</p>
+<form id="af"><input id="u" placeholder="Pseudo" autocomplete="username" autocapitalize="none" required><input id="p" type="password" placeholder="Mot de passe" autocomplete="current-password" required><button class="btn" id="go">Se connecter</button><div id="sw">Créer un compte</div><div id="er"></div></form></div>
 <script>
-// ============================================================
-// 1) COLLE ICI TES CLES SUPABASE (Project Settings > API)
-// ============================================================
-const SUPABASE_URL = "https://xqrvstjcxylehvtxhekf.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_KgfI0EMTBE-NNPLeV-cUEg_u1MH6ZkY";
-const EMAIL_DOMAIN = "@cigmap.local";
-
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-let map, myUser = null, myProfile = null, addMode = false;
-let cigData = [];
-let cigMarkers = [];
-let meMarker = null;
-let geoWatchId = null;
-
-/* =========================================================
-   Carte (MapLibre GL, vue globe qui s'aplatit en zoomant)
-   ========================================================= */
-function styleUrlFor(theme){
-  return theme === 'light'
-    ? 'https://tiles.openfreemap.org/styles/positron'
-    : 'https://tiles.openfreemap.org/styles/dark';
-}
-
-// Cache les noms de villes/rues tant qu'on n'a pas assez zoome (sobre, comme Snap)
-// mais laisse les labels de rues/stations apparaitre en zoomant plus pres.
-function simplifyStyle(){
-  const apply = ()=>{
-    const style = map.getStyle();
-    if(!style || !style.layers) return;
-    style.layers.forEach(layer=>{
-      if(layer.type === 'symbol'){
-        try{ map.setLayerZoomRange(layer.id, Math.max(layer.minzoom||0, 8), layer.maxzoom||24); }catch(e){}
-      }
-    });
-  };
-  if(map.isStyleLoaded()) apply(); else map.once('idle', apply);
-}
-
+const SB=supabase.createClient("https://xqrvstjcxylehvtxhekf.supabase.co","sb_publishable_KgfI0EMTBE-NNPLeV-cUEg_u1MH6ZkY",{auth:{persistSession:true,autoRefreshToken:true}}),DOM="@cigmap.local";
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const STY={dark:"https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",light:"https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"};
+let theme=localStorage.getItem("wm-t")||(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),globe=localStorage.getItem("wm-g")!="0";
+let map,me,pts=[],mks=[],pos=null,pick=false,here=null,uMk,watching=false,first=true;
+function applyTheme(){document.documentElement.dataset.t=theme;$("meta[name=theme-color]").content=theme=="dark"?"#0f1511":"#f3f6ef";$$("[data-th]").forEach(b=>b.classList.toggle("on",b.dataset.th==theme));$$("[data-gl]").forEach(b=>b.classList.toggle("on",(b.dataset.gl=="1")==globe))}
+const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),3800)};
+const openS=id=>{closeAll();$("#"+id).classList.add("on");document.body.classList.add("s")},closeAll=()=>{$$(".sh").forEach(s=>s.classList.remove("on"));document.body.classList.remove("s")};
+const gps=()=>new Promise((ok,ko)=>{if(!navigator.geolocation)return ko("Localisation indisponible sur cet appareil.");
+ navigator.geolocation.getCurrentPosition(p=>ok({lat:p.coords.latitude,lng:p.coords.longitude}),e=>ko(e.code==1?"Localisation refusée : active-la dans Réglages > Confidentialité > Service de localisation > WeedMap.":"Position introuvable. Réessaie ou touche la carte."),{enableHighAccuracy:true,timeout:12000,maximumAge:5000})});
 function initMap(){
-  map = new maplibregl.Map({
-    container: 'map',
-    style: styleUrlFor(document.body.getAttribute('data-theme') || 'dark'),
-    center: [10, 20],
-    zoom: 1.6,
-    attributionControl: false
-  });
-
-  map.on('style.load', ()=>{
-    map.setProjection({ type: 'globe' });
-    simplifyStyle();
-  });
-
-  map.on('click', (e)=>{
-    if(!addMode) return;
-    finishAddMode();
-    addCigarette(e.lngLat.lat, e.lngLat.lng);
-  });
+ map=new maplibregl.Map({container:"map",style:STY[theme],center:[10,25],zoom:1.5,attributionControl:false,dragRotate:false,touchPitch:false});
+ map.touchZoomRotate.disableRotation();
+ map.addControl(new maplibregl.AttributionControl({compact:true}),"bottom-left");
+ map.on("style.load",()=>map.setProjection({type:globe?"globe":"mercator"}));
+ map.on("moveend",draw);
+ map.on("click",e=>{if(pick){pos={lat:e.lngLat.lat,lng:e.lngLat.lng};pick=false;$("#aM").textContent="Endroit choisi. Appuie sur Enregistrer."}else closeAll()});
 }
-
-function drawMarkers(){
-  cigMarkers.forEach(m=>m.remove());
-  cigMarkers = [];
-  cigData.forEach(c=>{
-    const isMe = c.user_id === myProfile.id;
-    const el = document.createElement('div');
-    el.className = 'cigDot';
-    el.style.background = isMe ? '#ff7a45' : '#4da3ff';
-    const who = c.profiles ? c.profiles.username : (isMe ? myProfile.username : "?");
-    const popup = new maplibregl.Popup({ offset: 10 }).setHTML(
-      `<b>${who}</b><br>${new Date(c.created_at).toLocaleString()}`
-    );
-    const marker = new maplibregl.Marker({ element: el })
-      .setLngLat([c.lng, c.lat])
-      .setPopup(popup)
-      .addTo(map);
-    cigMarkers.push(marker);
-  });
+function draw(){
+ mks.forEach(m=>m.remove());mks=[];const cl=[];
+ for(const p of pts){const q=map.project([p.lng,p.lat]);let c=cl.find(c=>Math.hypot(c.x-q.x,c.y-q.y)<44);
+  if(c)c.l.push(p);else cl.push({x:q.x,y:q.y,lng:p.lng,lat:p.lat,l:[p]})}
+ for(const c of cl){const mine=c.l.some(p=>p.user_id==me.id),el=document.createElement("div");
+  el.innerHTML=`<div class="mk${mine?"":" f"}"><img src="leaf.png" alt="">${c.l.length>1?`<b>${c.l.length}</b>`:""}</div>`;
+  el.onclick=e=>{e.stopPropagation();showPts(c.l)};
+  mks.push(new maplibregl.Marker({element:el}).setLngLat([c.lng,c.lat]).addTo(map))}
 }
-
-/* =========================================================
-   Localisation en temps reel ("tu es ici")
-   ========================================================= */
-document.getElementById('locateBtn').onclick = ()=> startLocating();
-
-function startLocating(){
-  if(!navigator.geolocation){ return; }
-  if(geoWatchId !== null) return; // deja actif
-  geoWatchId = navigator.geolocation.watchPosition(
-    (pos)=>{
-      const { latitude, longitude } = pos.coords;
-      if(!meMarker){
-        const el = document.createElement('div');
-        el.className = 'meDot';
-        meMarker = new maplibregl.Marker({ element: el }).setLngLat([longitude, latitude]).addTo(map);
-      } else {
-        meMarker.setLngLat([longitude, latitude]);
-      }
-    },
-    ()=>{ /* refuse ou indisponible : on ignore silencieusement */ },
-    { enableHighAccuracy:true, maximumAge:5000 }
-  );
-}
-
-/* =========================================================
-   Ajout d'une clope
-   ========================================================= */
-document.getElementById('smokeBtn').onclick = ()=>{
-  addMode = true;
-  document.getElementById('smokeBtn').style.opacity = .5;
-};
-function finishAddMode(){
-  addMode = false;
-  document.getElementById('smokeBtn').style.opacity = 1;
-}
-async function addCigarette(lat, lng){
-  await sb.from('cigarettes').insert({ user_id: myProfile.id, lat, lng });
-  loadCigarettes();
-}
-
-/* =========================================================
-   Theme clair / sombre
-   ========================================================= */
-document.getElementById('themeToggleBtn').onclick = ()=>{
-  const body = document.body;
-  const isDark = body.getAttribute('data-theme')==='dark';
-  const newTheme = isDark ? 'light' : 'dark';
-  body.setAttribute('data-theme', newTheme);
-  document.getElementById('themeToggleBtn').textContent = isDark ? '☀️' : '🌙';
-  if(map) map.setStyle(styleUrlFor(newTheme));
-};
-
-/* =========================================================
-   Auth
-   ========================================================= */
-let isSignup = false;
-document.getElementById('switchMode').onclick = ()=>{
-  isSignup = !isSignup;
-  document.getElementById('authSubmit').textContent = isSignup ? "Créer le compte" : "Se connecter";
-  document.getElementById('switchMode').textContent = isSignup ? "J'ai déjà un compte" : "Pas de compte ? Créer un compte";
-};
-
-document.getElementById('authForm').onsubmit = async (e)=>{
-  e.preventDefault();
-  const username = document.getElementById('username').value.trim().toLowerCase();
-  const password = document.getElementById('password').value;
-  const email = username + EMAIL_DOMAIN;
-  const errBox = document.getElementById('authError');
-  errBox.textContent = "";
-
-  if(isSignup){
-    const { data, error } = await sb.auth.signUp({ email, password });
-    if(error){ errBox.textContent = error.message; return; }
-    const { error: profErr } = await sb.from('profiles').insert({ id: data.user.id, username });
-    if(profErr){ errBox.textContent = "Ce pseudo est déjà pris."; return; }
-    startApp(data.user);
-  } else {
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if(error){ errBox.textContent = "Pseudo ou mot de passe incorrect."; return; }
-    startApp(data.user);
-  }
-};
-
-document.getElementById('logoutBtn').onclick = async ()=>{
-  await sb.auth.signOut();
-  location.reload();
-};
-
-async function startApp(user){
-  myUser = user;
-  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
-  myProfile = profile;
-  document.getElementById('meLabel').textContent = "🍃 " + profile.username;
-  document.getElementById('auth').classList.add('hidden');
-  if(!map) initMap();
-  loadCigarettes();
-  loadFriendsPanel();
-  startLocating(); // demande la position des l'arrivee sur le site
-}
-
-/* =========================================================
-   Donnees
-   ========================================================= */
-async function loadCigarettes(){
-  const { data, error } = await sb.from('cigarettes').select('*, profiles(username)');
-  if(error || !data) return;
-  cigData = data;
-  drawMarkers();
-}
-
-/* --- Panneau amis --- */
-document.getElementById('friendsBtn').onclick = ()=> document.getElementById('friendsPanel').classList.add('open');
-document.getElementById('closeFriends').onclick = ()=> document.getElementById('friendsPanel').classList.remove('open');
-
-document.getElementById('searchInput').oninput = async (e)=>{
-  const q = e.target.value.trim().toLowerCase();
-  const box = document.getElementById('searchResults');
-  box.innerHTML = "";
-  if(q.length < 2) return;
-  const { data } = await sb.from('profiles').select('*').ilike('username', q+'%').neq('id', myProfile.id).limit(5);
-  (data||[]).forEach(p=>{
-    const row = document.createElement('div');
-    row.className = 'friendRow';
-    row.innerHTML = `<span>${p.username}</span><button>Ajouter</button>`;
-    row.querySelector('button').onclick = async ()=>{
-      await sb.from('friendships').insert({ user_id: myProfile.id, friend_id: p.id, status:'pending' });
-      row.querySelector('button').textContent = "Envoyé";
-    };
-    box.appendChild(row);
-  });
-};
-
-async function loadFriendsPanel(){
-  const { data: pending } = await sb.from('friendships')
-    .select('*, profiles!friendships_user_id_fkey(username)')
-    .eq('friend_id', myProfile.id).eq('status','pending');
-  const pendingBox = document.getElementById('pendingList');
-  pendingBox.innerHTML = "";
-  (pending||[]).forEach(f=>{
-    const row = document.createElement('div');
-    row.className = 'friendRow';
-    row.innerHTML = `<span>${f.profiles.username}</span><button>Accepter</button>`;
-    row.querySelector('button').onclick = async ()=>{
-      await sb.from('friendships').update({status:'accepted'}).eq('id', f.id);
-      loadFriendsPanel(); loadCigarettes();
-    };
-    pendingBox.appendChild(row);
-  });
-
-  const { data: accepted1 } = await sb.from('friendships').select('*, profiles!friendships_friend_id_fkey(username)').eq('user_id', myProfile.id).eq('status','accepted');
-  const { data: accepted2 } = await sb.from('friendships').select('*, profiles!friendships_user_id_fkey(username)').eq('friend_id', myProfile.id).eq('status','accepted');
-  const friendsBox = document.getElementById('friendsList');
-  friendsBox.innerHTML = "";
-  [...(accepted1||[]).map(f=>f.profiles.username), ...(accepted2||[]).map(f=>f.profiles.username)].forEach(name=>{
-    const row = document.createElement('div');
-    row.className = 'friendRow';
-    row.innerHTML = `<span>${name}</span>`;
-    friendsBox.appendChild(row);
-  });
-}
-
-sb.auth.getSession().then(({data})=>{
-  if(data.session) startApp(data.session.user);
-});
-</script>
-</body>
-</html>
+function showPts(l){
+ l=[...l].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+ $("#sPts").innerHTML=`<h2>${l.length>1?l.length+" sessions à cet endroit":"Session"}</h2>`+l.map(p=>{const mine=p.user_id==me.id,n=mine?"Moi":p.profiles?.username||"?";
+  return `<div class="row"><div><span class="dot" style="background:var(--${mine?"ac":"fr"})"></span><b>${esc(n)}</b>${p.title?`<small style="color:var(--tx)">${esc(p.title)}</small>`:""}<small>${new Date(p.created_at).toLocaleString("fr-FR",{dateStyle:"medium",timeStyle:"short"})}</small>${p.note?`<small>${esc(p.note)}</small>`:""}</div></div>`}).join("");
+ openS("sPts")}
+async function load(){const{data}=await SB.from("cigarettes").select("*, profiles(username)").order("created_at",{ascending:false}).limit(2000);pts=data||[];draw()}
+function track(){if(watching||!navigator.geolocation)return;watching=true;
+ navigator.geolocation.watchPosition(p=>{here=[p.coords.longitude,p.coords.latitude];
+  if(!uMk){const el=document.createElement("div");el.innerHTML='<div class="pd"></div>';uMk=new maplibregl.Marker({element:el}).setLngLat(here).addTo(map)}else uMk.setLngLat(here);
+  if(first){first=false;map.flyTo({center:here,zoom:14})}},()=>{watching=false},{enableHighAccuracy:true,maximumAge:5000})}
+$("#loc").onclick=async()=>{if(here)return map.flyTo({center:here,zoom:15});try{const p=await gps();map.flyTo({center:[p.lng,p.lat],zoom:15});track()}catch(e){toast(e)}};
+$("#add").onclick=async()=>{pick=false;pos=null;$("#aT").value="";$("#aN").value="";$("#aM").textContent="Position en cours…";openS("sAdd");
+ try{pos=await gps();$("#aM").textContent="Position trouvée."}catch(e){$("#aM").textContent=e+" Tu peux toucher la carte pour choisir l'endroit.";pick=true}};
+$("#aS").onclick=async()=>{
+ if(!pos){pick=true;$("#aM").textContent="Touche la carte pour choisir l'endroit.";return}
+ const row={user_id:me.id,lat:pos.lat,lng:pos.lng},t=$("#aT").value.trim(),n=$("#aN").value.trim();
+ let r=await SB.from("cigarettes").insert(t||n?{...row,title:t||null,note:n||null}:row);
+ if(r.error&&(t||n))r=await SB.from("cigarettes").insert(row);
+ if(r.error){$("#aM").textContent="Échec : "+r.error.message;return}
+ closeAll();await load();map.flyTo({center:[pos.lng,pos.lat],zoom:Math.max(map.getZoom(),15)})};
+async function loadFr(){
+ const F=k=>`*, profiles!friendships_${k}_fkey(username)`,T=SB.from.bind(SB);
+ const[a,b,c]=await Promise.all([T("friendships").select(F("user_id")).eq("friend_id",me.id).eq("status","pending"),T("friendships").select(F("friend_id")).eq("user_id",me.id).eq("status","accepted"),T("friendships").select(F("user_id")).eq("friend_id",me.id).eq("status","accepted")]);
+ $("#pend").innerHTML=(a.data||[]).map(f=>`<div class="row"><b>${esc(f.profiles.username)}</b><button data-ok="${f.id}">Accepter</button></div>`).join("")||'<p class="mu">Aucune demande.</p>';
+ $("#frs").innerHTML=[...(b.data||[]),...(c.data||[])].map(f=>`<div class="row"><b>${esc(f.profiles.username)}</b></div>`).join("")||'<p class="mu">Pas encore d\'ami. Cherche un pseudo ci-dessus.</p>'}
+$("#pend").onclick=async e=>{const id=e.target.dataset.ok;if(id){await SB.from("friendships").update({status:"accepted"}).eq("id",id);loadFr();load()}};
+$("#q").oninput=async e=>{const q=e.target.value.trim().toLowerCase(),b=$("#res");b.innerHTML="";if(q.length<2)return;
+ const{data}=await SB.from("profiles").select("id,username").ilike("username",q+"%").neq("id",me.id).limit(5);
+ b.innerHTML=(data||[]).map(p=>`<div class="row"><b>${esc(p.username)}</b><button data-add="${p.id}">Ajouter</button></div>`).join("")};
+$("#res").onclick=async e=>{const id=e.target.dataset.add;if(!id)return;e.target.disabled=true;const{error}=await SB.from("friendships").insert({user_id:me.id,friend_id:id,status:"pending"});e.target.textContent=error?"Déjà fait":"Envoyé"};
+$("#bF").onclick=()=>{openS("sFr");loadFr()};$("#bS").onclick=()=>openS("sSet");
+$$("[data-th]").forEach(b=>b.onclick=()=>{theme=b.dataset.th;localStorage.setItem("wm-t",theme);applyTheme();map.setStyle(STY[theme])});
+$$("[data-gl]").forEach(b=>b.onclick=()=>{globe=b.dataset.gl=="1";localStorage.setItem("wm-g",globe?1:0);applyTheme();map.setProjection({type:globe?"globe":"mercator"})});
+$("#pw").onclick=async()=>{const v=$("#npw").value;if(v.length<6)return toast("6 caractères minimum.");const{error}=await SB.auth.updateUser({password:v});toast(error?error.message:"Mot de passe modifié.");if(!error)$("#npw").value=""};
+$("#out").onclick=async()=>{await SB.auth.signOut();location.reload()};
+let signup=false;
+$("#sw").onclick=()=>{signup=!signup;$("#go").textContent=signup?"Créer le compte":"Se connecter";$("#sw").textContent=signup?"J'ai déjà un compte":"Créer un compte"};
+$("#af").onsubmit=async e=>{e.preventDefault();const u=$("#u").value.trim().toLowerCase(),p=$("#p").value,er=$("#er");er.textContent="";
+ if(!/^[a-z0-9_.-]{3,20}$/.test(u))return er.textContent="Pseudo : 3 à 20 caractères (lettres, chiffres, _ . -).";
+ if(signup){const{data,error}=await SB.auth.signUp({email:u+DOM,password:p});if(error)return er.textContent=/registered/i.test(error.message)?"Ce pseudo est déjà pris.":error.message;
+  const{error:pe}=await SB.from("profiles").insert({id:data.user.id,username:u});if(pe)return er.textContent="Ce pseudo est déjà pris.";start(data.user)}
+ else{const{data,error}=await SB.auth.signInWithPassword({email:u+DOM,password:p});if(error)return er.textContent="Pseudo ou mot de passe incorrect.";start(data.user)}};
+async function start(u){
+ const{data}=await SB.from("profiles").select("*").eq("id",u.id).single();
+ if(!data){await SB.auth.signOut();return $("#er").textContent="Profil introuvable, réessaie."}
+ me=data;$("#nm").textContent=me.username;$("#auth").classList.add("hid");
+ if(!map)initMap();load();track()}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&me)load()});
+applyTheme();
+SB.auth.getSession().then(({data})=>{if(data.session)start(data.session.user)});
+</script></body></html>
