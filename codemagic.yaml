@@ -20,6 +20,7 @@ workflows:
           P=ios/App/App/Info.plist
           /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string WeedMap utilise ta position pour placer tes sessions" $P || true
           /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string WeedMap utilise l appareil photo pour tes sessions" $P || true
+          /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string WeedMap utilise le micro pour tes messages vocaux" $P || true
           /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string WeedMap utilise tes photos pour tes sessions" $P || true
           /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName WeedMap" $P || true
       - name: Installer les pods
